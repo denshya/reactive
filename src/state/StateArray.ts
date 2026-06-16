@@ -46,6 +46,25 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
     return result
   }
 
+  /**
+   * Creates a derived State that transforms the array value.
+   * Similar to State.to() but for StateArray.
+   *
+   * @example
+   * const items = new StateArray([1, 2, 3])
+   * const count = items.to(arr => arr.length)  // State<number>
+   * const doubled = items.to(arr => arr.map(x => x * 2))  // State<number[]>
+   */
+  to<U>(predicate: (value: T[]) => U): State<U> {
+    const fork = new State(predicate(this.value))
+    this.subscribe(value => {
+      const newValue = predicate(value)
+      if (newValue === fork.value) return
+      fork.set(newValue)
+    })
+    return fork
+  }
+
   *[Symbol.iterator]() { yield* this.value }
 }
 
