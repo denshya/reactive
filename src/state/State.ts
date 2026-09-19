@@ -91,12 +91,15 @@ export class State<T> extends Signal<T> {
    */
   to<U>(predicate: (value: T) => U): State<U> {
     const fork = new State(predicate(this.value))
-    this.messager.subscribe(value => {
+    const source = this.messager.subscribe(value => {
       const newValue = predicate(value)
       if (newValue === fork.value) return
 
       fork.set(newValue)
     })
+    // The fork detaches from this state when its last observer leaves, so forks
+    // owned by removed views stop tracking their source instead of leaking.
+    fork.messager.onEmpty = () => source.unsubscribe()
     return fork
   }
 

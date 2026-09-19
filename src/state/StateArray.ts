@@ -1,6 +1,7 @@
 import { Signal } from "@/signal/Signal"
 
 import { State } from "./State"
+import { StateReconciler, createReconciledDerivation } from "./StateReconciler"
 
 import { ReactiveSource } from "../Flow"
 
@@ -9,6 +10,48 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
   constructor(init: ReactiveSource<T[]> = []) {
     super(Signal.get(init))
     Signal.subscribe(init, value => this.set(value))
+  }
+
+  /**
+   * Creates a derived `State` by transforming the whole array,
+   * same as `State.to`. The fork detaches from this array when its
+   * last observer leaves.
+   */
+  to<U>(predicate: (value: T[]) => U): State<U> {
+    const fork = new State(predicate(this.value))
+    const source = this.messager.subscribe(value => {
+      const newValue = predicate(value)
+      if (newValue === fork.value) return
+
+      fork.set(newValue)
+    })
+    fork.messager.onEmpty = () => source.unsubscribe()
+    return fork
+  }
+
+  #reconciler?: StateReconciler<T>
+
+  /**
+   * Reconciling strategy augmenting this array's per-item derivations.
+   *
+   * Assign a `StateReconciler` — usually `StateReconciler.IDENTITY` or one with a
+   * custom `equals` — and `map` keeps the derived values of items that are "the
+   * same" across updates instead of re-deriving every item. Pairs with Tama's
+   * list reconciliation, where surviving mapped views keep their DOM.
+   *
+   * Assigning stores the strategy only — derivation happens in `map`, and the
+   * strategy propagates to mapped children so chained derivations stay reconciled.
+   *
+   * @example
+   * ```ts
+   * const rows = new StateArray<Row>([])
+   * rows.reconciler = StateReconciler.IDENTITY
+   * const views = rows.map(row => <RowView row={row} />)
+   * ```
+   */
+  get reconciler(): StateReconciler<T> | undefined { return this.#reconciler }
+  set reconciler(reconciler: StateReconciler<T>) {
+    this.#reconciler = reconciler
   }
 
   /**
@@ -35,6 +78,18 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
 
   /** Behaves the same way that `Array` does. Transforms every value with `predicate` and create new instance of `StateArray`. */
   map<U>(predicate: (value: T, index: number, array: T[]) => U): StateArray<U> {
+    // With a reconciler installed, surviving items keep their mapped values —
+    // the predicate runs at most once per "same" item, so it must be pure
+    // with respect to the reconciler's equality.
+    const reconciler = this.#reconciler
+    if (reconciler != null) {
+      const derive = createReconciledDerivation(reconciler, predicate)
+      const mapped = new StateArray(derive(this.value))
+      mapped.reconciler = reconciler as StateReconciler<U>
+      this.subscribe(value => mapped.set(derive(value)))
+      return mapped
+    }
+
     const mapped = new StateArray(this.value.map(predicate))
     this.subscribe(value => mapped.set(value.map(predicate)))
     return mapped

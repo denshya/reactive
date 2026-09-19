@@ -135,3 +135,33 @@ describe("State", () => {
     expect(pointerX.current).toBe(1)
   })
 })
+
+describe("State.to detachment", () => {
+	it("detaches a fork from its source when its last subscriber leaves", () => {
+		const source = new State(1)
+		const fork = source.to(value => value * 2)
+
+		const first = fork.subscribe(() => { })
+		expect(fork.get()).toBe(2)
+
+		source.set(3)
+		expect(fork.get()).toBe(6)
+
+		first.unsubscribe()
+		source.set(10)
+		expect(fork.get()).toBe(6) // Detached — no longer follows the source.
+	})
+
+	it("keeps a fork subscribed while it has subscribers", () => {
+		const source = new State(1)
+		const fork = source.to(value => value * 2)
+
+		const keep = fork.subscribe(() => { })
+		const drop = fork.subscribe(() => { })
+		drop.unsubscribe()
+
+		source.set(5)
+		expect(fork.get()).toBe(10)
+		keep.unsubscribe()
+	})
+})
