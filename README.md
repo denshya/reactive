@@ -5,6 +5,14 @@ Signal-based Reactive Data Modeling and Management.
 This is a Reactivity Primitives Library, a uniform system that tries to comprehend industry standards.
 It supports two kind of `Signal`s ([`EventSignal`](https://github.com/FrameMuse/event-signal) and [`ClosureSignal`](https://github.com/FrameMuse/closure-signal)), gives utils to ease reactivity rather than piping.
 
+<p align="center">
+  <a href="https://www.npmjs.com/package/@denshya/reactive">
+    <img src="https://img.shields.io/npm/v/@denshya/reactive?color=007ec6" />
+    <img alt="npm package minimized gzipped size" src="https://img.shields.io/bundlejs/size/@denshya/reactive">
+  </a>
+  <a href="http://commitizen.github.io/cz-cli/"><img src="https://img.shields.io/badge/commitizen-friendly-brightgreen.svg" alt="Commitizen friendly" /></a>
+</p>
+
 ## Getting Started with `State`
 
 ### Quick Peek
@@ -144,6 +152,12 @@ State.batch(() => {
 })
 ```
 
+`State.combine` still runs its reducer once per changed source. The batch coalesces notifications, not the reducer calls. Use `State.capture` when the derivation itself should run once per batch:
+
+```ts
+const full = State.capture(() => `${first.use()} ${last.use()}`)
+```
+
 By default the batch flushes before `State.batch` returns. Pass a scheduler to defer the flush:
 
 ```ts
@@ -157,7 +171,9 @@ await State.batch(() => {
 }, requestAnimationFrame)
 ```
 
-A scheduler receives the flush callback and may run it immediately, in a microtask, or before the next frame. When a scheduler is passed, `State.batch` returns a promise that resolves after the flush with the closure's return value. Nested batches join the outer transaction.
+A scheduler receives the flush callback and may run it immediately, in a microtask, or before the next frame. Without a scheduler, `State.batch` returns the closure's value after the synchronous flush. With a scheduler, it returns a promise that resolves after the flush with the same value. Nested batches join the outer transaction.
+
+Batching applies to `StateArray` and `StateMap` changes as well. `Emitter` and `StateFSM.when` stay event-per-dispatch.
 
 ## Access properties
 
@@ -229,21 +245,40 @@ However, you can still use `State` with arrays by using `$[index]`, it will stil
 
 ## `StateMap`
 
-A `Map` that notifies subscribers after every mutation.
+A `Map` that notifies subscribers after every mutation. It implements `subscribe` and `subscribeImmediate`, so `State.batch` applies to it too.
 
 ```ts
 import { State, StateMap } from "@denshya/reactive"
 
-const users = new StateMap([[1, { name: "FrameMuse" }]])
+const users = new StateMap<string, { name: string }>([["1", { name: "FrameMuse" }]])
 users.subscribe(console.log) // Logs `users` changes.
 
-users.set(2, { name: "Denshya" })
-users.delete(1)
-users.clear()
+users.set("2", { name: "Denshya" })
+users.set({ "3": { name: "Reactive" } }) // Assigns multiple entries.
+users.delete("1")
 
-// A key can be observable.
-const selectedId = new State(2)
+// A key can be observable. The state follows key and map changes.
+const selectedId = new State("2")
 const selected = users.get$(selectedId) // State of the selected user.
+
+users.clear() // `selected` becomes `undefined`.
+```
+
+Create maps from plain data:
+
+```ts
+const fromRecord = StateMap.fromJSON({ a: 1, b: 2 })
+const list = new State([{ id: 1, name: "FrameMuse" }])
+const fromUsers = StateMap.fromIterable(list) // Uses `item.id` as the key.
+```
+
+Batching also works with maps:
+
+```ts
+State.batch(() => {
+  users.set("1", { name: "FrameMuse" })
+  selectedId.set("1")
+})
 ```
 
 ## `StateFSM`
@@ -291,14 +326,15 @@ state // => `State` instance.
 `State` (and other) has hidden `toJSON` method, which outputs actual value for serialization.
 
 ```ts
-import { State, StateArray } from "@denshya/reactive"
+import { State, StateArray, StateMap } from "@denshya/reactive"
 
 const bool = new State(true)
 const string = new State("text")
 const record = new State({foo:"bar"})
 const array = new StateArray([1,2,3])
+const map = new StateMap([["key", "value"]])
 
-JSON.stringify({ bool, string, record, array })
+JSON.stringify({ bool, string, record, array, map })
 ```
 
 =>
@@ -308,7 +344,8 @@ JSON.stringify({ bool, string, record, array })
   "bool": true,
   "string": "text",
   "record": { "foo" : "bar" },
-  "array": [1, 2, 3]
+  "array": [1, 2, 3],
+  "map": { "key": "value" }
 }
 ```
 
@@ -336,6 +373,19 @@ Dispatcher for single messages. Useful for building custom `Signal`-like structu
 ### `Notifier`
 
 Is a `Messager` but only for empty messages. Use for semantics.
+
+### `Batcher`
+
+The transaction runner behind `State.batch`. It exposes the same `batch` method as a static.
+
+```ts
+import { Batcher } from "@denshya/reactive"
+
+Batcher.batch(() => {
+  first.set("Jane")
+  last.set("Roe")
+})
+```
 
 ### `Emitter`
 

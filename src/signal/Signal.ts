@@ -90,16 +90,17 @@ export namespace Signal {
   }
 
   /**
-   * Runs `closure` as one transaction, notifying each changed signal once with
-   * its final value. The flush happens before `batch` returns unless a
-   * `scheduler` is passed.
+   * Merges notifications via `subscribe` into one.
    *
    * @example
+   * // Logs only once => "Hello Jane Roe"
+   * State.combine([first, last], (first, last) => console.log("Hello " + first + " " + last))
+   * 
    * ```ts
    * State.batch(() => {
    *   first.set("Jane")
    *   last.set("Roe")
-   * }) // Subscribers of derived states run once.
+   * })
    *
    * await State.batch(() => {
    *   first.set("Janet")
