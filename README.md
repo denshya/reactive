@@ -125,6 +125,40 @@ event.sets(pointerX.from(event => event.x))
 
 This literally says "`event` sets `value` from `event.currentTarget.value`".
 
+## Batching
+
+`State.batch` groups multiple writes so subscribers are notified once with the final values.
+
+```ts
+import { State } from "@denshya/reactive"
+
+const first = new State("John")
+const last = new State("Doe")
+const full = State.combine([first, last], (first, last) => `${first} ${last}`)
+
+full.subscribe(console.log) // Logs once with "Jane Roe".
+
+State.batch(() => {
+  first.set("Jane")
+  last.set("Roe")
+})
+```
+
+By default the batch flushes before `State.batch` returns. Pass a scheduler to defer the flush:
+
+```ts
+await State.batch(() => {
+  first.set("Janet")
+  last.set("Doe")
+}, queueMicrotask)
+
+await State.batch(() => {
+  first.set("Jan")
+}, requestAnimationFrame)
+```
+
+A scheduler receives the flush callback and may run it immediately, in a microtask, or before the next frame. When a scheduler is passed, `State.batch` returns a promise that resolves after the flush with the closure's return value. Nested batches join the outer transaction.
+
 ## Access properties
 
 ```ts
@@ -157,6 +191,8 @@ State.collect({ foo: state1, bar: state2 }) // Reduces to `State<{ foo: number, 
 State.f`display: ${style.$.display}; opacity: ${1}`
 /** Creates `State` from a plain value or forks from existing one. */
 State.from(...)
+/** Groups writes and notifies each changed state once with its final value. */
+State.batch(() => { ... })
 /** Unwraps any Signal-like structure. */
 State.get(...)
 /** Uses any Signal-like structure (even third-party) as `ClosureSignal` - can be used in `State.capture`. */

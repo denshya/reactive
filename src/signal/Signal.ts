@@ -2,6 +2,7 @@ import { RefReadonly } from "@/ValueReference"
 
 import { ClosureParticipant } from "./ClosureSignal"
 
+import { Batcher, type BatchScheduler } from "../Batch"
 import { ObservableGetter, ReactiveSource } from "../Flow"
 import { Messager } from "../Messages"
 import { Observable, ObservableOptions, Subscriptable, Unsubscribe } from "../types"
@@ -86,6 +87,29 @@ export namespace Signal {
 
     options?.signal?.addEventListener("abort", unsubscribe.unsubscribe)
     return unsubscribe
+  }
+
+  /**
+   * Runs `closure` as one transaction, notifying each changed signal once with
+   * its final value. The flush happens before `batch` returns unless a
+   * `scheduler` is passed.
+   *
+   * @example
+   * ```ts
+   * State.batch(() => {
+   *   first.set("Jane")
+   *   last.set("Roe")
+   * }) // Subscribers of derived states run once.
+   *
+   * await State.batch(() => {
+   *   first.set("Janet")
+   * }, queueMicrotask)
+   * ```
+   */
+  export function batch<T>(closure: () => T): T
+  export function batch<T>(closure: () => T, scheduler: BatchScheduler): Promise<T>
+  export function batch<T>(closure: () => T, scheduler?: BatchScheduler): T | Promise<T> {
+    return scheduler == null ? Batcher.batch(closure) : Batcher.batch(closure, scheduler)
   }
 
   /**

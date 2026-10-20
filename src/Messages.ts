@@ -1,7 +1,11 @@
+import { Batcher } from "./Batch"
 import { ObservableOptions, Unsubscribe } from "./types"
 
 export class Messager<T> {
   private readonly callbacks = new Set<(value: T) => void>()
+
+  private pending = false
+  private declare pendingValue: T
 
   /**
    * Runs when the last subscriber leaves. Derived states (like `State.to` forks)
@@ -11,7 +15,19 @@ export class Messager<T> {
   onEmpty?: () => void
 
   dispatch(value: T) {
-    this.callbacks.forEach(callback => callback(value))
+    if (Batcher.isBatching() === false) {
+      this.callbacks.forEach(callback => callback(value))
+      return
+    }
+
+    this.pendingValue = value
+    if (this.pending) return
+
+    this.pending = true
+    Batcher.enqueue(this, () => {
+      this.pending = false
+      this.callbacks.forEach(callback => callback(this.pendingValue))
+    })
   }
 
   subscribe(next: (value: T) => void, options?: ObservableOptions): Unsubscribe {

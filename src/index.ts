@@ -8,6 +8,8 @@ export * from "./state/StateBoolean"
 export * from "./state/StateFSM"
 export * from "./state/StateMap"
 
+export { Batcher, type BatchScheduler } from "./Batch"
+
 export * from "./Emitter"
 export * from "./Messages"
 

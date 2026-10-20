@@ -2,6 +2,8 @@
 
 import { RefReadonly } from "@/ValueReference"
 
+import { Batcher } from "../Batch"
+
 // https://www.youtube.com/watch?v=vHy7GRpTpm8&list=LL&index=3&t=514s
 // https://codesandbox.io/s/0xyqf?file=/reactive.js:0-1088
 
@@ -20,7 +22,24 @@ export interface ClosureCaptor {
 export class ClosureCaptor {
   dependencies = new Set<ClosureDependencies>
 
+  private pending = false
+
   constructor(private readonly closure: () => void) { }
+
+  captureBatched() {
+    if (Batcher.isBatching() === false) {
+      this.capture()
+      return
+    }
+
+    if (this.pending) return
+
+    this.pending = true
+    Batcher.enqueue(this, () => {
+      this.pending = false
+      this.capture()
+    })
+  }
 
   capture() {
     ClosureCaptor.dispose(this)
@@ -60,7 +79,7 @@ export class ClosureParticipant {
   /** Executes previously attached captors. */
   dispatch() {
     for (const subscriber of [...this.dependencies]) {
-      subscriber.capture()
+      subscriber.captureBatched()
     }
   }
 }
