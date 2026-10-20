@@ -19,13 +19,13 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
    */
   to<U>(predicate: (value: T[]) => U): State<U> {
     const fork = new State(predicate(this.value))
-    const source = this.messager.subscribe(value => {
+    const source = this.subscribe(value => {
       const newValue = predicate(value)
-      if (newValue === fork.value) return
+      if (newValue === fork.get()) return
 
       fork.set(newValue)
     })
-    fork.messager.onEmpty = () => source.unsubscribe()
+    fork.setOnEmpty(() => source.unsubscribe())
     return fork
   }
 
@@ -85,7 +85,7 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
     if (reconciler != null) {
       const derive = createReconciledDerivation(reconciler, predicate)
       const mapped = new StateArray(derive(this.value))
-      mapped.reconciler = reconciler as StateReconciler<U>
+      mapped.reconciler = reconciler as unknown as StateReconciler<U>
       this.subscribe(value => mapped.set(derive(value)))
       return mapped
     }
@@ -99,25 +99,6 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
     const result = this.value.splice(index, deleteCount)
     this.messager.dispatch(this.value)
     return result
-  }
-
-  /**
-   * Creates a derived State that transforms the array value.
-   * Similar to State.to() but for StateArray.
-   *
-   * @example
-   * const items = new StateArray([1, 2, 3])
-   * const count = items.to(arr => arr.length)  // State<number>
-   * const doubled = items.to(arr => arr.map(x => x * 2))  // State<number[]>
-   */
-  to<U>(predicate: (value: T[]) => U): State<U> {
-    const fork = new State(predicate(this.value))
-    this.subscribe(value => {
-      const newValue = predicate(value)
-      if (newValue === fork.value) return
-      fork.set(newValue)
-    })
-    return fork
   }
 
   *[Symbol.iterator]() { yield* this.value }

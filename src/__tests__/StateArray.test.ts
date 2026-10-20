@@ -26,3 +26,20 @@ describe("StateArray", () => {
     expect(stateArray.get()).toEqual([1, 2, 3])
   })
 })
+
+describe("StateArray.to detachment", () => {
+  it("detaches a fork from its array when its last subscriber leaves", () => {
+    const source = new StateArray([1, 2, 3])
+    const fork = source.to(values => values.length)
+
+    const subscription = fork.subscribe(() => { })
+    expect(fork.get()).toBe(3)
+
+    source.push(4)
+    expect(fork.get()).toBe(4)
+
+    subscription.unsubscribe()
+    source.push(5)
+    expect(fork.get()).toBe(4)
+  })
+})

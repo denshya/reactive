@@ -8,6 +8,15 @@ import { Observable, ObservableOptions, Subscriptable, Unsubscribe } from "../ty
 import { isObservableGetter, isObservableLike } from "../utils"
 
 
+/** Normalizes the unsubscribe shapes used by third-party observables. */
+function asUnsubscribe(subscription: unknown): Unsubscribe {
+  if (subscription instanceof Function) return { unsubscribe: subscription as () => void }
+  if (subscription instanceof Object && "unsubscribe" in subscription) return subscription as Unsubscribe
+
+  return { unsubscribe: () => { } }
+}
+
+
 export class Signal<T> implements RefReadonly<T>, Observable<T>, Subscriptable<T> {
   protected closureParticipant = new ClosureParticipant
   protected messager = new Messager<T>
@@ -47,6 +56,13 @@ export class Signal<T> implements RefReadonly<T>, Observable<T>, Subscriptable<T
   subscribe(callback: (value: T) => void, options?: ObservableOptions) { return this.messager.subscribe(callback, options) }
   [Symbol.subscribe](next: (value: T) => void, options?: ObservableOptions) { return this.messager.subscribe(next, options) }
 
+  /**
+   * Registers a callback that runs when the last observer unsubscribes.
+   * Derived signals use it to detach from their source.
+   * @internal
+   */
+  setOnEmpty(callback: () => void) { this.messager.onEmpty = callback }
+
   protected toJSON() { return this.value }
   protected valueOf() { return this.value }
 }
@@ -56,16 +72,17 @@ export namespace Signal {
   /** Invokes `callback` when `observable` updates. */
   export function subscribe<T>(observable: ReactiveSource<T>, callback: (value: T) => void, options?: ObservableOptions): Unsubscribe
   export function subscribe(value: unknown, callback: (value: any) => void, options?: ObservableOptions): Unsubscribe {
-    let unsubscribe: Unsubscribe = { unsubscribe: () => { } }
+    if (value == null || value instanceof Object === false || isObservableLike(value) === false) {
+      return { unsubscribe: () => { } }
+    }
 
-    if (value == null) return unsubscribe
-    if (value instanceof Object === false) return unsubscribe
-    if (isObservableLike(value) === false) return unsubscribe
+    // An already aborted signal would never release the subscription.
+    if (options?.signal?.aborted) return { unsubscribe: () => { } }
 
-
-    if ("subscribe" in value) unsubscribe = value.subscribe(callback)
-    else if (Symbol.subscribe in value) unsubscribe = value[Symbol.subscribe](callback)
-
+    const subscription = "subscribe" in value
+      ? value.subscribe(callback)
+      : value[Symbol.subscribe](callback)
+    const unsubscribe = asUnsubscribe(subscription)
 
     options?.signal?.addEventListener("abort", unsubscribe.unsubscribe)
     return unsubscribe

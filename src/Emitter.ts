@@ -1,7 +1,9 @@
 import { Subscriptable } from "./types"
 
+type EventArgs<T> = [T] extends [never] ? [] : [T] extends [void] ? [] : [T]
+
 export class Emitter<EventMap extends Record<EventName, unknown>, EventName extends keyof EventMap = keyof EventMap> {
-  private callbacks: Partial<Record<keyof never, Set<(value: any) => void>>> = {}
+  private callbacks: Partial<Record<keyof never, Set<(...args: any[]) => void>>> = {}
   private callbacksAny = new Set<(value: this) => void>()
 
   private on<Event extends keyof EventMap>(event: Event, callback: (value: EventMap[Event]) => void) {
@@ -31,8 +33,8 @@ export class Emitter<EventMap extends Record<EventName, unknown>, EventName exte
     })
   }
 
-  public dispatch<Event extends keyof EventMap>(event: Event, ...payload: EventMap[Event] extends never ? [] : [EventMap[Event]]) {
-    this.callbacks[event]?.forEach(callback => callback(payload))
+  public dispatch<Event extends keyof EventMap>(event: Event, ...payload: EventArgs<EventMap[Event]>) {
+    this.callbacks[event]?.forEach(callback => callback(...payload))
     this.callbacksAny.forEach(callback => callback(this))
   }
   public when<Event extends keyof EventMap>(event: Event): Subscriptable<EventMap[Event]> {

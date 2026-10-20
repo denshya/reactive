@@ -1,8 +1,8 @@
 import { Messager } from "@/Messages"
-import { Observable } from "@/types"
+import { Subscriptable } from "@/types"
 import { RefReadonly } from "@/ValueReference"
 
-export class EventSignal<T> implements RefReadonly<T>, Observable<T> {
+export class EventSignal<T> implements RefReadonly<T>, Subscriptable<T> {
   protected messager = new Messager<T>
   protected value: T
 
@@ -19,7 +19,6 @@ export class EventSignal<T> implements RefReadonly<T>, Observable<T> {
   }
 
   subscribe(next: (value: T) => void) { return this.messager.subscribe(next) }
-  [Symbol.subscribe](next: (value: T) => void) { return this.messager.subscribe(next) }
 
   protected toJSON() { return this.value }
   protected valueOf() { return this.value }

@@ -6,6 +6,7 @@ export * from "./state/StateArray"
 export * from "./state/StateReconciler"
 export * from "./state/StateBoolean"
 export * from "./state/StateFSM"
+export * from "./state/StateMap"
 
 export * from "./Emitter"
 export * from "./Messages"

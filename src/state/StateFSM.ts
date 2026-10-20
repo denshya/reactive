@@ -7,6 +7,6 @@ export class StateFSM<T extends keyof never> extends EventSignal<T> {
 
   override set(newValue: T | ((current: T) => T)): void {
     super.set(newValue)
-    this.events.dispatch(this.value, void 0)
+    this.events.dispatch(this.value)
   }
 }

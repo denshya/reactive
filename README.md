@@ -34,11 +34,12 @@ blog.articles.push({
 })
 
 blog.admin.enabled.set(true) // Active admin UI.
-blog.admin.save.dispatch() // Buttons triggers saving.
+
+blog.admin.save.subscribe(() => fetch("/blog", { method: "POST", body: JSON.stringify(blog) }))
+blog.admin.save.dispatch() // e.g. Button triggers saving.
 
 blog.user.set({ id: 2, name: "Denshya" }) // Replace user.
 blog.user.$.name.set("Reactive") // Partial change.
-
 ```
 
 > [!Note]
@@ -190,6 +191,25 @@ console.log(array.get()) // [1,2,4,5]
 
 However, you can still use `State` with arrays by using `$[index]`, it will still work but not so comfortable.
 
+## `StateMap`
+
+A `Map` that notifies subscribers after every mutation.
+
+```ts
+import { State, StateMap } from "@denshya/reactive"
+
+const users = new StateMap([[1, { name: "FrameMuse" }]])
+users.subscribe(console.log) // Logs `users` changes.
+
+users.set(2, { name: "Denshya" })
+users.delete(1)
+users.clear()
+
+// A key can be observable.
+const selectedId = new State(2)
+const selected = users.get$(selectedId) // State of the selected user.
+```
+
 ## `StateFSM`
 
 Finite State Machine, based on `Signal` and `Emitter`.
@@ -289,7 +309,7 @@ A key-based event messager, usually known as Event Emitter.
 import { Emitter } from "@denshya/reactive"
 
 interface Events {
-  add(id: number): void
+  add: number
 }
 
 const emitter = new Emitter<Events>
