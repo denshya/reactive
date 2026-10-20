@@ -8,6 +8,7 @@
       "ESNext"
     ],
     "module": "ESNext",
+    "moduleDetection": "force",
     "skipLibCheck": true,
     // App
     "paths": {
@@ -23,15 +24,16 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "downlevelIteration": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "isolatedDeclarations": true,
     "declaration": true,
     "emitDeclarationOnly": true,
     "outDir": "build",
+    "rootDir": "./",
     "stripInternal": true,
     /* Linting */
     "strict": true,

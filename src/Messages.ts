@@ -14,7 +14,7 @@ export class Messager<T> {
    */
   onEmpty?: () => void
 
-  dispatch(value: T) {
+  dispatch(value: T): void {
     if (Batcher.isBatching() === false) {
       this.callbacks.forEach(callback => callback(value))
       return
@@ -52,7 +52,7 @@ export class Messager<T> {
     return { unsubscribe }
   }
 
-  protected toJSON() { }
+  protected toJSON(): void { }
 }
 
 /**

@@ -3,7 +3,7 @@ import { State } from "./state/State"
 import { isObservableGetter } from "./utils"
 
 export class FlowModel<T> extends SignalReadonly<T> {
-  commit() {
+  commit(): void {
     this.messager.dispatch(this.value)
   }
 }

@@ -1,6 +1,6 @@
 import { Messager } from "@/Messages"
 import { Signal } from "@/signal/Signal"
-import { ObservableOptions, Subscriptable } from "@/types"
+import { ObservableOptions, Subscriptable, Unsubscribe } from "@/types"
 
 import { ReactiveSource } from "../Flow"
 import { State } from "./State"
@@ -16,7 +16,7 @@ const idSelector = (item: any) => item.id
  * both the key and the map.
  */
 export class StateMap<K, V> extends Map<K, V> implements Subscriptable<Map<K, V>> {
-  protected messager = new Messager<Map<K, V>>
+  protected messager: Messager<Map<K, V>> = new Messager<Map<K, V>>
 
   constructor(init?: Iterable<readonly [K, V]>) {
     super()
@@ -26,10 +26,10 @@ export class StateMap<K, V> extends Map<K, V> implements Subscriptable<Map<K, V>
     if (init) for (const [key, value] of init) super.set(key, value)
   }
 
-  subscribe(listener: (value: Map<K, V>) => void, options?: ObservableOptions) {
+  subscribe(listener: (value: Map<K, V>) => void, options?: ObservableOptions): Unsubscribe {
     return this.messager.subscribe(listener, options)
   }
-  subscribeImmediate(listener: (value: Map<K, V>) => void, options?: ObservableOptions) {
+  subscribeImmediate(listener: (value: Map<K, V>) => void, options?: ObservableOptions): Unsubscribe {
     if (!options?.signal?.aborted) listener(this)
     return this.subscribe(listener, options)
   }
@@ -87,7 +87,7 @@ export class StateMap<K, V> extends Map<K, V> implements Subscriptable<Map<K, V>
     return state
   }
 
-  toJSON() {
+  toJSON(): Record<string, V> {
     return Object.fromEntries(this)
   }
 

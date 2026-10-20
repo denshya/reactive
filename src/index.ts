@@ -1,4 +1,4 @@
-import "./REQUIRED_SYMBOLS"
+import "./globals"
 
 export * from "./state/State"
 export * from "./state/State.types"

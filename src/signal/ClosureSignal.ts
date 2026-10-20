@@ -20,13 +20,13 @@ export interface ClosureCaptor {
 
 
 export class ClosureCaptor {
-  dependencies = new Set<ClosureDependencies>
+  dependencies: Set<ClosureDependencies> = new Set<ClosureDependencies>
 
   private pending = false
 
   constructor(private readonly closure: () => void) { }
 
-  captureBatched() {
+  captureBatched(): void {
     if (Batcher.isBatching() === false) {
       this.capture()
       return
@@ -41,7 +41,7 @@ export class ClosureCaptor {
     })
   }
 
-  capture() {
+  capture(): void {
     ClosureCaptor.dispose(this)
     ClosureCaptor.subscribers.push(this)
 
@@ -54,8 +54,8 @@ export class ClosureCaptor {
 
   static readonly subscribers: ClosureCaptor[] = []
   /** Retrieves current (last) subscriber. */
-  static getCurrent() { return ClosureCaptor.subscribers.at(-1) }
-  static dispose(subscriber: ClosureCaptor) {
+  static getCurrent(): ClosureCaptor | undefined { return ClosureCaptor.subscribers.at(-1) }
+  static dispose(subscriber: ClosureCaptor): void {
     for (const dependency of subscriber.dependencies) {
       dependency.delete(subscriber)
     }
@@ -68,7 +68,7 @@ export class ClosureParticipant {
   private readonly dependencies: ClosureDependencies = new Set
 
   /** Attaches this participant to the current closure captor. */
-  attach() {
+  attach(): void {
     const captor = ClosureCaptor.getCurrent()
     if (captor == null) return
 
@@ -77,7 +77,7 @@ export class ClosureParticipant {
   }
 
   /** Executes previously attached captors. */
-  dispatch() {
+  dispatch(): void {
     for (const subscriber of [...this.dependencies]) {
       subscriber.captureBatched()
     }
@@ -91,7 +91,7 @@ export namespace ClosureSignal {
     private value: T
     private closureParticipant = new ClosureParticipant
 
-    get current() { return this.value }
+    get current(): T { return this.value }
 
     constructor(initialValue: T) { this.value = initialValue }
 
@@ -118,6 +118,6 @@ export namespace ClosureSignal {
     // @ts-expect-error private `value`.
     get(): T { return this.state.value }
     // @ts-expect-error private `value`.
-    get current() { return this.value }
+    get current(): T { return this.value }
   }
 }

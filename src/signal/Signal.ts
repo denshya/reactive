@@ -19,12 +19,12 @@ function asUnsubscribe(subscription: unknown): Unsubscribe {
 
 
 export class Signal<T> implements RefReadonly<T>, Observable<T>, Subscriptable<T> {
-  protected closureParticipant = new ClosureParticipant
-  protected messager = new Messager<T>
+  protected closureParticipant: ClosureParticipant = new ClosureParticipant
+  protected messager: Messager<T> = new Messager<T>
   protected value: T
 
   /** Retrieves current `value` without side-effects. Alias to `get`. */
-  get current() { return this.value }
+  get current(): T { return this.value }
 
   constructor(initialValue: T) { this.value = initialValue }
 
@@ -54,24 +54,22 @@ export class Signal<T> implements RefReadonly<T>, Observable<T>, Subscriptable<T
   }
 
   /** Invokes `callback` when `observable` updates. */
-  subscribe(callback: (value: T) => void, options?: ObservableOptions) { return this.messager.subscribe(callback, options) }
-  [Symbol.subscribe](next: (value: T) => void, options?: ObservableOptions) { return this.messager.subscribe(next, options) }
+  subscribe(callback: (value: T) => void, options?: ObservableOptions): Unsubscribe { return this.messager.subscribe(callback, options) }
+  [Symbol.subscribe](next: (value: T) => void, options?: ObservableOptions): Unsubscribe { return this.messager.subscribe(next, options) }
 
-  /**
-   * Registers a callback that runs when the last observer unsubscribes.
-   * Derived signals use it to detach from their source.
-   * @internal
-   */
-  setOnEmpty(callback: () => void) { this.messager.onEmpty = callback }
+  // Registers a callback that runs when the last observer unsubscribes.
+  // Derived signals use it to detach from their source.
+  /** @internal */
+  setOnEmpty(callback: () => void): void { this.messager.onEmpty = callback }
 
-  protected toJSON() { return this.value }
-  protected valueOf() { return this.value }
+  protected toJSON(): T { return this.value }
+  protected valueOf(): T { return this.value }
 }
 
 
 export namespace Signal {
   /** Invokes `callback` when `observable` updates. */
-  export function subscribe<T>(observable: ReactiveSource<T>, callback: (value: T) => void, options?: ObservableOptions): Unsubscribe
+  export function subscribe<T>(observable: ReactiveSource<T> | Observable<T> | Subscriptable<T>, callback: (value: T) => void, options?: ObservableOptions): Unsubscribe
   export function subscribe(value: unknown, callback: (value: any) => void, options?: ObservableOptions): Unsubscribe {
     if (value == null || value instanceof Object === false || isObservableLike(value) === false) {
       return { unsubscribe: () => { } }

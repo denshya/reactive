@@ -20,14 +20,12 @@ export class Batcher {
   private static scheduledToken = 0
 
   /** @internal */
-  static isBatching() { return Batcher.depth > 0 || Batcher.scheduled }
+  static isBatching(): boolean { return Batcher.depth > 0 || Batcher.scheduled }
 
-  /**
-   * Queues one flush per `key`. A stable key keeps repeated writes from the same
-   * signal or closure from producing more than one notification.
-   * @internal
-   */
-  static enqueue(key: object, flush: () => void) {
+  // Queues one flush per `key`. A stable key keeps repeated writes from the same
+  // signal or closure from producing more than one notification.
+  /** @internal */
+  static enqueue(key: object, flush: () => void): void {
     if (Batcher.isBatching()) Batcher.queue.set(key, flush)
     else flush()
   }

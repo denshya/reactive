@@ -1,4 +1,4 @@
-import { Subscriptable } from "./types"
+import { Subscriptable, Unsubscribe } from "./types"
 
 type EventArgs<T> = [T] extends [never] ? [] : [T] extends [void] ? [] : [T]
 
@@ -22,7 +22,7 @@ export class Emitter<EventMap extends Record<EventName, unknown>, EventName exte
 
     this.on(event, once)
   }
-  public until<Event extends keyof EventMap>(event: Event, timeout = 15 * 1000): Promise<EventMap[Event]> {
+  public until<Event extends keyof EventMap>(event: Event, timeout: number = 15 * 1000): Promise<EventMap[Event]> {
     return new Promise((resolve, reject) => {
       const timeoutId = setTimeout(() => reject(new Error(`Time's out awaiting event "${event.toString()}"`)), timeout)
 
@@ -33,7 +33,7 @@ export class Emitter<EventMap extends Record<EventName, unknown>, EventName exte
     })
   }
 
-  public dispatch<Event extends keyof EventMap>(event: Event, ...payload: EventArgs<EventMap[Event]>) {
+  public dispatch<Event extends keyof EventMap>(event: Event, ...payload: EventArgs<EventMap[Event]>): void {
     this.callbacks[event]?.forEach(callback => callback(...payload))
     this.callbacksAny.forEach(callback => callback(this))
   }
@@ -48,10 +48,10 @@ export class Emitter<EventMap extends Record<EventName, unknown>, EventName exte
     }
   }
 
-  public subscribe(next: (value: this) => void) {
+  public subscribe(next: (value: this) => void): Unsubscribe {
     this.callbacksAny.add(next)
     return { unsubscribe: () => void this.callbacksAny.delete(next) }
   }
 
-  protected toJSON() { }
+  protected toJSON(): void { }
 }

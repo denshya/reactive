@@ -91,9 +91,9 @@ describe("State", () => {
 
   it("should create State from state-, observable-like, plain values", () => {
     // Plain.
-    expect(State.from(0)).toEqual(new State(0))
-    expect(State.from([])).toEqual(new State([]))
-    expect(State.from({})).toEqual(new State({}))
+    expect(State.from<number>(0)).toEqual(new State<number>(0))
+    expect(State.from<never[]>([])).toEqual(new State<never[]>([]))
+    expect(State.from<{}>({})).toEqual(new State<{}>({}))
     // State.
     expect(State.from(new State({}))).toEqual(new State({}))
     // State-like

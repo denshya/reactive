@@ -1,5 +1,5 @@
 import { Messager } from "./Messages"
-import { AccessorGet, Observable, Subscriptable } from "./types"
+import { AccessorGet, Observable, Subscriptable, Unsubscribe } from "./types"
 import { Ref } from "./ValueReference"
 
 
@@ -15,35 +15,35 @@ export type ExtractGetable<T> = T extends ReactiveSource<infer R> ? R : T;
 
 export abstract class SignalReadonly<T> {
   protected value: T
-  protected messager = new Messager<T>
+  protected messager: Messager<T> = new Messager<T>
 
   constructor(initialValue: T) { this.value = initialValue }
 
-  get() { return this.value }
-  protected set(value: T) {
+  get(): T { return this.value }
+  protected set(value: T): void {
     this.value = value
     this.messager.dispatch(value)
   }
 
-  [Symbol.subscribe](next: (value: T) => void) { return this.messager.subscribe(next) }
+  [Symbol.subscribe](next: (value: T) => void): Unsubscribe { return this.messager.subscribe(next) }
 
-  protected toJSON() { return this.value }
-  protected valueOf() { return this.value }
+  protected toJSON(): T { return this.value }
+  protected valueOf(): T { return this.value }
 }
 export abstract class SignalWriteonly<T> {
   protected value: T
-  protected messager = new Messager<T>
+  protected messager: Messager<T> = new Messager<T>
 
   constructor(initialValue: T) { this.value = initialValue }
 
-  set(value: T | ((value: T) => T)) {
+  set(value: T | ((value: T) => T)): void {
     value = value instanceof Function ? value(this.value) : value
 
     this.value = value
     this.messager.dispatch(value)
   }
 
-  protected toJSON() { }
+  protected toJSON(): void { }
 }
 
 

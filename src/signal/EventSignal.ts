@@ -1,12 +1,12 @@
 import { Messager } from "@/Messages"
-import { Subscriptable } from "@/types"
+import { Subscriptable, Unsubscribe } from "@/types"
 import { RefReadonly } from "@/ValueReference"
 
 export class EventSignal<T> implements RefReadonly<T>, Subscriptable<T> {
-  protected messager = new Messager<T>
+  protected messager: Messager<T> = new Messager<T>
   protected value: T
 
-  get current() { return this.value }
+  get current(): T { return this.value }
 
   constructor(initialValue: T) { this.value = initialValue }
 
@@ -18,8 +18,8 @@ export class EventSignal<T> implements RefReadonly<T>, Subscriptable<T> {
     this.messager.dispatch(value)
   }
 
-  subscribe(next: (value: T) => void) { return this.messager.subscribe(next) }
+  subscribe(next: (value: T) => void): Unsubscribe { return this.messager.subscribe(next) }
 
-  protected toJSON() { return this.value }
-  protected valueOf() { return this.value }
+  protected toJSON(): T { return this.value }
+  protected valueOf(): T { return this.value }
 }

@@ -95,17 +95,17 @@ export class StateArray<T> extends Signal<T[]> implements Iterable<T> {
     return mapped
   }
 
-  splice(index: number, deleteCount = 1) {
+  splice(index: number, deleteCount: number = 1): T[] {
     const result = this.value.splice(index, deleteCount)
     this.messager.dispatch(this.value)
     return result
   }
 
-  *[Symbol.iterator]() { yield* this.value }
+  *[Symbol.iterator](): IterableIterator<T> { yield* this.value }
 }
 
 export namespace StateArray {
-  export function from<T>(init: ReactiveSource<T[] | null | undefined>) {
+  export function from<T>(init: ReactiveSource<T[] | null | undefined>): StateArray<T> {
     const state = new StateArray(Signal.get(init) ?? [])
     Signal.subscribe(init, value => state.set(value ?? []))
     return state

@@ -14,12 +14,13 @@ export default defineConfig({
   build: {
     target: false,
     outDir: "build",
+    minify: false,
     sourcemap: true,
     emptyOutDir: true,
+    modulePreload: false,
     lib: {
-      entry: "./src/index.ts",
-      formats: ["es"],
-      fileName: "index"
+      entry: [path.resolve(__dirname, "./src/index.ts")],
+      formats: ["es"]
     }
   },
   esbuild: {

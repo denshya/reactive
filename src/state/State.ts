@@ -13,7 +13,7 @@ import { StateOrPlain } from "./State.types"
 
 export class State<T> extends Signal<T> {
   /** Subscribes to updates and immediately calls the `callback`. */
-  subscribeImmediate(callback: (value: T) => void, options?: ObservableOptions) {
+  subscribeImmediate(callback: (value: T) => void, options?: ObservableOptions): Unsubscribe {
     if (!options?.signal?.aborted) callback(this.value)
     return this.subscribe(callback, options)
   }
@@ -41,7 +41,7 @@ export class State<T> extends Signal<T> {
     return this.messager.subscribe(value => other.set(value))
   }
   /** Copies value from `other` Signal-like structure just once. */
-  copy(other: Ref<T> | AccessorGet<T>) {
+  copy(other: Ref<T> | AccessorGet<T>): void {
     if ("current" in other) {
       this.set(other.current)
       return
@@ -65,7 +65,7 @@ export class State<T> extends Signal<T> {
    * app.get().user.name === "me" // true
    * ```
    */
-  get $() {
+  get $(): ReactiveSelector<T> {
     if (this._$ == null) {
       this._$ = createReactiveSelector(this)
     }
@@ -175,7 +175,7 @@ export class State<T> extends Signal<T> {
 }
 
 export namespace State {
-  export function subscribeImmediate(value: unknown, callback: (value: unknown) => void, options?: ObservableOptions) {
+  export function subscribeImmediate(value: unknown, callback: (value: unknown) => void, options?: ObservableOptions): Unsubscribe {
     const result = State.subscribe(value, callback, options)
 
     if (options?.signal?.aborted) return result
